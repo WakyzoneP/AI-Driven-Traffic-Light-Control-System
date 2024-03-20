@@ -1,7 +1,8 @@
 import random
+import uuid
 import pygame
 
-from colors import RED
+from colors import RED, GREEN
 from constants import (
     CAR_SPEED,
     CAR_WIDTH,
@@ -15,28 +16,52 @@ from objects.intersection import Intersection
 
 
 class Car:
-    def __init__(self, id, init_location, final_location, intersection):
-        self.id = id
+    def __init__(self, init_location, final_location, intersection):
+        self.id = uuid.uuid1()
         self.time_spent = 0
         self.color = RED
         self.init_location = init_location
         self.final_location = final_location
         self.intersection: Intersection = intersection
-        if self.init_location == Location.UP or self.init_location == Location.DOWN:
-            self.orientation = Orientation.VERTICAL
-        if self.init_location == Location.RIGHT or self.init_location == Location.LEFT:
-            self.orientation = Orientation.HORIZONTAL
+        self._set_orientation()
+        if self.orientation == Orientation.E or self.orientation == Orientation.W:
+            self.rect = pygame.Rect(0, 0, CAR_WIDTH, CAR_HEIGHT)
+        if self.orientation == Orientation.N or self.orientation == Orientation.S:
+            self.rect = pygame.Rect(0, 0, CAR_HEIGHT, CAR_WIDTH)
         self._position()
-        
+
+    def _set_orientation(self):
+        if self.init_location == Location.UP:
+            self.orientation = Orientation.S
+        elif self.init_location == Location.RIGHT:
+            self.orientation = Orientation.W
+        elif self.init_location == Location.DOWN:
+            self.orientation = Orientation.N
+        elif self.init_location == Location.LEFT:
+            self.orientation = Orientation.E
+
+    def _change_orientation(self):
+        if self.final_location == Location.UP:
+            self.orientation = Orientation.N
+        elif self.final_location == Location.RIGHT:
+            self.orientation = Orientation.E
+        elif self.final_location == Location.DOWN:
+            self.orientation = Orientation.S
+        elif self.final_location == Location.LEFT:
+            self.orientation = Orientation.W
+
+        if self.orientation == Orientation.N or self.orientation == Orientation.S:
+            self.rect.width = CAR_HEIGHT
+            self.rect.height = CAR_WIDTH
+        if self.orientation == Orientation.E or self.orientation == Orientation.W:
+            self.rect.width = CAR_WIDTH
+            self.rect.height = CAR_HEIGHT
+
     def _create_life(self):
-        random = random.randint(0, 2)
-        self.life = random * 100
+        random_number = random.randint(0, 2)
+        self.life = random_number * 100
 
     def _position(self):
-        if self.orientation == Orientation.HORIZONTAL:
-            self.rect = pygame.Rect(0, 0, CAR_WIDTH, CAR_HEIGHT)
-        if self.orientation == Orientation.VERTICAL:
-            self.rect = pygame.Rect(0, 0, CAR_HEIGHT, CAR_WIDTH)
         if self.init_location == Location.UP:
             self.rect.x = (
                 self.intersection.x
@@ -86,18 +111,18 @@ class Car:
                 // 2
             )
 
-    def draw(self, window):
-        if self.orientation == Orientation.HORIZONTAL:
+    def draw(self, window, view_collision=False):
+
+        pygame.draw.rect(
+            window,
+            self.color,
+            self.rect,
+        )
+        if view_collision:
             pygame.draw.rect(
                 window,
-                self.color,
-                (self.rect.x, self.rect.y, CAR_WIDTH, CAR_HEIGHT),
-            )
-        if self.orientation == Orientation.VERTICAL:
-            pygame.draw.rect(
-                window,
-                self.color,
-                (self.rect.x, self.rect.y, CAR_HEIGHT, CAR_WIDTH),
+                GREEN,
+                self.col_rect,
             )
 
     def _choose_path(self):
@@ -131,6 +156,27 @@ class Car:
             elif random_number == 2:
                 self.final_location = Location.DOWN
 
+    def _check_collision(self, init_x, init_y, car_list):
+        if self.orientation == Orientation.N:
+            self.col_rect = pygame.Rect(self.rect.x, self.rect.y - 5, CAR_HEIGHT, 5)
+        elif self.orientation == Orientation.E:
+            self.col_rect = pygame.Rect(
+                self.rect.x + CAR_WIDTH, self.rect.y, 5, CAR_HEIGHT
+            )
+        elif self.orientation == Orientation.S:
+            self.col_rect = pygame.Rect(
+                self.rect.x, self.rect.y + CAR_WIDTH, CAR_HEIGHT, 5
+            )
+        elif self.orientation == Orientation.W:
+            self.col_rect = pygame.Rect(self.rect.x - 5, self.rect.y, 5, CAR_HEIGHT)
+        for car in car_list:
+            if self.id != car.id and car.rect.colliderect(self.rect):
+                print(f"Hit car at {self.intersection.id}")
+            if car.rect.colliderect(self.col_rect):
+                self.rect.x = init_x
+                self.rect.y = init_y
+                break
+
     def _move_from_up(self, car_list):
         init_x = self.rect.x
         init_y = self.rect.y
@@ -142,7 +188,11 @@ class Car:
             - 2 * 5
             - CAR_WIDTH
             and self.rect.y + CAR_SPEED
-            < self.intersection.y + (self.intersection.height - ROAD_WIDTH) // 2 - 2 * 5
+            < self.intersection.y
+            + (self.intersection.height - ROAD_WIDTH) // 2
+            - 2 * 5
+            - CAR_WIDTH
+            + CAR_SPEED
         ):
             return
         if self.final_location == Location.RIGHT:
@@ -164,7 +214,7 @@ class Car:
                         + (2 * self.intersection.height + LINE_WIDTH + ROAD_WIDTH) // 4
                         - CAR_WIDTH // 4
                     )
-                    self.orientation = Orientation.HORIZONTAL
+                    self._change_orientation()
             elif self.rect.x < self.intersection.x + self.intersection.width:
                 self.rect.x += CAR_SPEED
                 if self.rect.x >= self.intersection.x + self.intersection.width:
@@ -192,10 +242,17 @@ class Car:
                     self.rect.y
                     >= self.intersection.y + self.intersection.height // 2 - CAR_WIDTH
                 ):
-                    self.rect.x = (
-                        self.intersection.x + self.intersection.width // 2 - CAR_WIDTH
+                    self.rect.y = (
+                        self.intersection.y
+                        + (
+                            self.intersection.height
+                            - ROAD_WIDTH // 2
+                            - LINE_WIDTH // 2
+                            - CAR_WIDTH // 2
+                        )
+                        // 2
                     )
-                    self.orientation = Orientation.HORIZONTAL
+                    self._change_orientation()
             elif self.rect.x > self.intersection.x - CAR_WIDTH:
                 self.rect.x -= CAR_SPEED
                 if self.rect.x <= self.intersection.x - CAR_WIDTH:
@@ -204,15 +261,8 @@ class Car:
                         self.init_location = Location.RIGHT
                         self._choose_path()
                         self._position()
-        for car in car_list:
-            if self.orientation == Orientation.HORIZONTAL:
-                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_WIDTH + 5, CAR_HEIGHT)
-            else:
-                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_HEIGHT, CAR_WIDTH + 5)
-            if car.id != self.id:
-                if gap_rect.colliderect(car.rect):
-                    self.rect.x = init_x
-                    self.rect.y = init_y
+
+        self._check_collision(init_x, init_y, car_list)
 
     def _move_from_right(self, car_list):
         init_x = self.rect.x
@@ -225,7 +275,7 @@ class Car:
             > self.intersection.x
             + (self.intersection.width + ROAD_WIDTH) // 2
             + 2 * 5
-            - CAR_WIDTH
+            - CAR_SPEED
         ):
             return
         if self.final_location == Location.DOWN:
@@ -262,7 +312,7 @@ class Car:
                         )
                         // 2
                     )
-                    self.orientation = Orientation.VERTICAL
+                    self._change_orientation()
             elif self.rect.y < self.intersection.y + self.intersection.height:
                 self.rect.y += CAR_SPEED
                 if self.rect.y >= self.intersection.y + self.intersection.height:
@@ -307,7 +357,7 @@ class Car:
                     self.rect.y = (
                         self.intersection.y + self.intersection.height // 2 - CAR_WIDTH
                     )
-                    self.orientation = Orientation.VERTICAL
+                    self._change_orientation()
             elif self.rect.y > self.intersection.y - CAR_WIDTH:
                 self.rect.y -= CAR_SPEED
                 if self.rect.y <= self.intersection.y - CAR_WIDTH:
@@ -316,15 +366,8 @@ class Car:
                         self.init_location = Location.DOWN
                         self._choose_path()
                         self._position()
-        for car in car_list:
-            if self.orientation == Orientation.HORIZONTAL:
-                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_WIDTH + 5, CAR_HEIGHT)
-            else:
-                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_HEIGHT, CAR_WIDTH + 5)
-            if car.id != self.id:
-                if gap_rect.colliderect(car.rect):
-                    self.rect.x = init_x
-                    self.rect.y = init_y
+
+        self._check_collision(init_x, init_y, car_list)
 
     def _move_from_down(self, car_list):
         init_x = self.rect.x
@@ -337,7 +380,7 @@ class Car:
             > self.intersection.y
             + (self.intersection.height + ROAD_WIDTH) // 2
             - 2 * 5
-            - CAR_WIDTH
+            - CAR_SPEED
         ):
             return
         if self.final_location == Location.LEFT:
@@ -374,7 +417,7 @@ class Car:
                         )
                         // 2
                     )
-                    self.orientation = Orientation.HORIZONTAL
+                    self._change_orientation()
             elif self.rect.x > self.intersection.x - CAR_WIDTH:
                 self.rect.x -= CAR_SPEED
                 if self.rect.x <= self.intersection.x - CAR_WIDTH:
@@ -421,7 +464,7 @@ class Car:
                         + self.intersection.width // 2
                         + CAR_WIDTH // 2
                     )
-                    self.orientation = Orientation.HORIZONTAL
+                    self._change_orientation()
             elif self.rect.x < self.intersection.x + self.intersection.width:
                 self.rect.x += CAR_SPEED
                 if self.rect.x >= self.intersection.x + self.intersection.width:
@@ -430,16 +473,8 @@ class Car:
                         self.init_location = Location.LEFT
                         self._choose_path()
                         self._position()
-                        
-        for car in car_list:
-            if self.orientation == Orientation.HORIZONTAL:
-                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_WIDTH + 5, CAR_HEIGHT)
-            else:
-                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_HEIGHT, CAR_WIDTH + 5)
-            if car.id != self.id:
-                if gap_rect.colliderect(car.rect):
-                    self.rect.x = init_x
-                    self.rect.y = init_y
+
+        self._check_collision(init_x, init_y, car_list)
 
     def _move_from_left(self, car_list):
         init_x = self.rect.x
@@ -452,7 +487,11 @@ class Car:
             - 2 * 5
             - CAR_WIDTH
             and self.rect.x + CAR_SPEED
-            < self.intersection.x + (self.intersection.width - ROAD_WIDTH) // 2 - 2 * 5
+            < self.intersection.x
+            + (self.intersection.width - ROAD_WIDTH) // 2
+            - 2 * 5
+            - CAR_WIDTH
+            + CAR_SPEED
         ):
             return
         if self.final_location == Location.UP:
@@ -489,7 +528,7 @@ class Car:
                         )
                         // 2
                     )
-                    self.orientation = Orientation.VERTICAL
+                    self._change_orientation()
             elif self.rect.y > self.intersection.y - CAR_WIDTH:
                 self.rect.y -= CAR_SPEED
                 if self.rect.y <= self.intersection.y - CAR_WIDTH:
@@ -541,7 +580,7 @@ class Car:
                         )
                         // 2
                     )
-                    self.orientation = Orientation.VERTICAL
+                    self._change_orientation()
             elif self.rect.y < self.intersection.y + self.intersection.height:
                 self.rect.y += CAR_SPEED
                 if self.rect.y >= self.intersection.y + self.intersection.height:
@@ -550,15 +589,8 @@ class Car:
                         self.init_location = Location.UP
                         self._choose_path()
                         self._position()
-        for car in car_list:
-            if self.orientation == Orientation.HORIZONTAL:
-                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_WIDTH + 5, CAR_HEIGHT)
-            else:
-                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_HEIGHT, CAR_WIDTH + 5)
-            if car.id != self.id:
-                if gap_rect.colliderect(car.rect):
-                    self.rect.x = init_x
-                    self.rect.y = init_y
+
+        self._check_collision(init_x, init_y, car_list)
 
     def move(self, car_list):
         if self.init_location == Location.UP:
@@ -569,4 +601,3 @@ class Car:
             self._move_from_down(car_list)
         elif self.init_location == Location.LEFT:
             self._move_from_left(car_list)
-

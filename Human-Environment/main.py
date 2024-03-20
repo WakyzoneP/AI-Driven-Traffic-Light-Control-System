@@ -9,13 +9,14 @@ from constants import (
     WINDOW_HEIGHT,
     FPS,
     Location,
-    Orientation,
 )
 from objects.car import Car
 from objects.intersection import Intersection
 
+
 class Environment:
     def __init__(self, w=WINDOW_WIDTH, h=WINDOW_HEIGHT):
+        self.view_collision = False
         self.time = 100
         self.width = w
         self.height = h
@@ -46,9 +47,12 @@ class Environment:
         )
 
         self.car_list = []
-        self.car_list.append(Car(1, Location.UP, Location.RIGHT, self.intersections[0]))
-        self.car_list.append(Car(2, Location.RIGHT, Location.LEFT, self.intersections[0]))
-        self.car_list.append(Car(3, Location.DOWN, Location.UP, self.intersections[0]))
+        # self.car_list.append(Car(Location.UP, Location.DOWN, self.intersections[0]))
+        # self.car_list.append(Car(Location.RIGHT, Location.DOWN, self.intersections[0]))
+        # self.car_list.append(Car(Location.DOWN, Location.RIGHT, self.intersections[0]))
+        # self.car_list.append(Car(Location.LEFT, Location.RIGHT, self.intersections[1]))
+        # self.car_list.append(Car(Location.UP, Location.LEFT, self.intersections[1]))
+        # self.car_list.append(Car(Location.UP, Location.LEFT, self.intersections[1]))
 
     def draw_background(self):
         self.window.fill(BLACK)
@@ -58,7 +62,7 @@ class Environment:
     def update_ui(self):
         self.draw_background()
         for car in self.car_list:
-            car.draw(self.window)
+            car.draw(self.window, self.view_collision)
 
         pygame.display.update()
 
@@ -92,41 +96,54 @@ class Environment:
                     self.intersections[2].change_light(2)
                 if event.key == pygame.K_j:
                     self.intersections[2].change_light(3)
-        
-        # random_number = random.randint(0, 100)
-        # if random_number == 10:
-        #     random_init_location = random.choice(list(Location))
-        #     random_final_location = random.choice([loc for loc in list(Location) if loc != random_init_location])
-            
-        #     self.car_list.append(Car(random_init_location, random_final_location, self.intersections[0]))
-        
+                if event.key == pygame.K_c:
+                    self.view_collision = not self.view_collision
+
+        random_number = random.randint(0, 100)
+        if random_number == 10:
+            print(f"new car - {self.car_list.__len__()}")
+            random_intersection = random.choice(self.intersections)
+            spawn_locations_list = []
+            for neighbour in random_intersection.neighbours:
+                if random_intersection.neighbours[neighbour] is None:
+                    if neighbour == "top":
+                        spawn_locations_list.append(Location.UP)
+                    elif neighbour == "right":
+                        spawn_locations_list.append(Location.RIGHT)
+                    elif neighbour == "bottom":
+                        spawn_locations_list.append(Location.DOWN)
+                    elif neighbour == "left":
+                        spawn_locations_list.append(Location.LEFT)
+            init_location = random.choice(spawn_locations_list)
+            final_locations = [
+                location for location in Location if location != init_location
+            ]
+            final_location = random.choice(final_locations)
+            new_car = Car(init_location, final_location, random_intersection)
+            is_valid = True
+            for car in self.car_list:
+                if car.rect.colliderect(new_car.rect):
+                    print("Cannot spawn car, intersection is occupied.")
+                    is_valid = False
+                    break
+            if is_valid:
+                self.car_list.append(new_car)
+
         self.time -= 1
         if self.time == 0:
-            self.car_list.append(Car(4, Location.UP, Location.RIGHT, self.intersections[0]))
+            self.time = 100
+            # self.car_list.append(Car(Location.UP, Location.LEFT, self.intersections[1]))
+            # self.car_list.append(Car(Location.LEFT, Location.RIGHT, self.intersections[1]))
+            # self.car_list.append(Car(Location.UP, Location.LEFT, self.intersections[1]))
+            # self.car_list.append(Car(Location.UP, Location.RIGHT, self.intersections[2]))
+
+        # print(f"{self.car_list[0].intersection.id} - {self.car_list[0].init_location} - {self.car_list[0].orientation} - {self.car_list[0].final_location}")
 
         for car in self.car_list:
             if car.intersection is None:
                 self.car_list.remove(car)
             else:
-                init_x = car.rect.x
-                init_y = car.rect.y
                 car.move(self.car_list)
-                # for car2 in self.car_list:
-                #     if car2 != car and car2.rect.colliderect(car.rect):
-                #         print(f"Collision between {car.id} and {car2.id}")
-                #         if(car.init_location == Location.UP):
-                #             print("UP")
-                #             init_y -= 5
-                #         elif(car.init_location == Location.RIGHT):
-                #             init_x -= 5
-                #         elif(car.init_location == Location.DOWN):
-                #             init_y += 5
-                #         elif(car.init_location == Location.LEFT):
-                #             init_x += 5
-                #         car.rect.x = init_x
-                #         car.rect.y = init_y
-                #         break
-                
 
         self.update_ui()
         self.clock.tick(FPS)

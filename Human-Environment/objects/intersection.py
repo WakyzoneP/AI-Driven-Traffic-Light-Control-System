@@ -12,7 +12,10 @@ from constants import (
 
 
 class Intersection:
+    intersection_count = 0
     def __init__(self, x, y, w=INTERSECTION_WIDTH, h=INTERSECTION_HEIGHT):
+        Intersection.intersection_count += 1
+        self.id = Intersection.intersection_count
         self.x = x
         self.y = y
         self.width = w

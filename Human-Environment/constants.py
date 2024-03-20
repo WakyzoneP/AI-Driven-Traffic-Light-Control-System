@@ -24,5 +24,7 @@ class Location(Enum):
     LEFT = 3
     
 class Orientation(Enum):
-    HORIZONTAL = 0
-    VERTICAL = 1
+    N = 0
+    E = 1
+    S = 2
+    W = 3
