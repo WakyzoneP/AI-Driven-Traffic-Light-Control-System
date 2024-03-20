@@ -13,9 +13,9 @@ from constants import (
 from objects.car import Car
 from objects.intersection import Intersection
 
-
 class Environment:
     def __init__(self, w=WINDOW_WIDTH, h=WINDOW_HEIGHT):
+        self.time = 100
         self.width = w
         self.height = h
         self.window = pygame.display.set_mode((w, h))
@@ -45,7 +45,9 @@ class Environment:
         )
 
         self.car_list = []
-        self.car_list.append(Car(Location.RIGHT, Location.UP, self.intersections[0]))
+        self.car_list.append(Car(Location.UP, Location.RIGHT, self.intersections[0]))
+        self.car_list.append(Car(Location.RIGHT, Location.LEFT, self.intersections[0]))
+        self.car_list.append(Car(Location.DOWN, Location.UP, self.intersections[0]))
 
     def draw_background(self):
         self.window.fill(BLACK)
@@ -90,18 +92,30 @@ class Environment:
                 if event.key == pygame.K_j:
                     self.intersections[2].change_light(3)
         
-        random_number = random.randint(0, 100)
-        if random_number == 10:
-            random_init_location = random.choice(list(Location))
-            random_final_location = random.choice([loc for loc in list(Location) if loc != random_init_location])
+        # random_number = random.randint(0, 100)
+        # if random_number == 10:
+        #     random_init_location = random.choice(list(Location))
+        #     random_final_location = random.choice([loc for loc in list(Location) if loc != random_init_location])
             
-            self.car_list.append(Car(random_init_location, random_final_location, self.intersections[0]))
+        #     self.car_list.append(Car(random_init_location, random_final_location, self.intersections[0]))
+        
+        self.time -= 1
+        if self.time == 0:
+            self.car_list.append(Car(Location.UP, Location.RIGHT, self.intersections[0]))
 
         for car in self.car_list:
             if car.intersection is None:
                 self.car_list.remove(car)
             else:
+                init_x = car.rect.x
+                init_y = car.rect.y
                 car.move()
+                for car2 in self.car_list:
+                    if car2 != car and car2.rect.colliderect(car.rect):
+                        car.rect.x = init_x
+                        car.rect.y = init_y
+                        break
+                
 
         self.update_ui()
         self.clock.tick(FPS)

@@ -112,3 +112,6 @@ class Intersection:
 
     def generate_car(self):
         pass
+
+    def __str__(self) -> str:
+        return f"Intersection at ({self.x}, {self.y}) with lights {self.lights}"
