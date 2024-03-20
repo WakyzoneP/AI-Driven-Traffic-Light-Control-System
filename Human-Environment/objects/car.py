@@ -15,7 +15,9 @@ from objects.intersection import Intersection
 
 
 class Car:
-    def __init__(self, init_location, final_location, intersection):
+    def __init__(self, id, init_location, final_location, intersection):
+        self.id = id
+        self.time_spent = 0
         self.color = RED
         self.init_location = init_location
         self.final_location = final_location
@@ -25,12 +27,16 @@ class Car:
         if self.init_location == Location.RIGHT or self.init_location == Location.LEFT:
             self.orientation = Orientation.HORIZONTAL
         self._position()
+        
+    def _create_life(self):
+        random = random.randint(0, 2)
+        self.life = random * 100
 
     def _position(self):
         if self.orientation == Orientation.HORIZONTAL:
-            self.rect = pygame.Rect(0, 0, CAR_WIDTH + 5, CAR_HEIGHT)
+            self.rect = pygame.Rect(0, 0, CAR_WIDTH, CAR_HEIGHT)
         if self.orientation == Orientation.VERTICAL:
-            self.rect = pygame.Rect(0, 0, CAR_HEIGHT, CAR_WIDTH + 5)
+            self.rect = pygame.Rect(0, 0, CAR_HEIGHT, CAR_WIDTH)
         if self.init_location == Location.UP:
             self.rect.x = (
                 self.intersection.x
@@ -125,7 +131,9 @@ class Car:
             elif random_number == 2:
                 self.final_location = Location.DOWN
 
-    def _move_from_up(self):
+    def _move_from_up(self, car_list):
+        init_x = self.rect.x
+        init_y = self.rect.y
         if (
             self.intersection.lights[0] == "red"
             and self.rect.y + CAR_SPEED
@@ -196,8 +204,19 @@ class Car:
                         self.init_location = Location.RIGHT
                         self._choose_path()
                         self._position()
+        for car in car_list:
+            if self.orientation == Orientation.HORIZONTAL:
+                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_WIDTH + 5, CAR_HEIGHT)
+            else:
+                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_HEIGHT, CAR_WIDTH + 5)
+            if car.id != self.id:
+                if gap_rect.colliderect(car.rect):
+                    self.rect.x = init_x
+                    self.rect.y = init_y
 
-    def _move_from_right(self):
+    def _move_from_right(self, car_list):
+        init_x = self.rect.x
+        init_y = self.rect.y
         if (
             self.intersection.lights[1] == "red"
             and self.rect.x - CAR_SPEED
@@ -297,8 +316,19 @@ class Car:
                         self.init_location = Location.DOWN
                         self._choose_path()
                         self._position()
+        for car in car_list:
+            if self.orientation == Orientation.HORIZONTAL:
+                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_WIDTH + 5, CAR_HEIGHT)
+            else:
+                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_HEIGHT, CAR_WIDTH + 5)
+            if car.id != self.id:
+                if gap_rect.colliderect(car.rect):
+                    self.rect.x = init_x
+                    self.rect.y = init_y
 
-    def _move_from_down(self):
+    def _move_from_down(self, car_list):
+        init_x = self.rect.x
+        init_y = self.rect.y
         if (
             self.intersection.lights[2] == "red"
             and self.rect.y - CAR_SPEED
@@ -400,8 +430,20 @@ class Car:
                         self.init_location = Location.LEFT
                         self._choose_path()
                         self._position()
+                        
+        for car in car_list:
+            if self.orientation == Orientation.HORIZONTAL:
+                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_WIDTH + 5, CAR_HEIGHT)
+            else:
+                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_HEIGHT, CAR_WIDTH + 5)
+            if car.id != self.id:
+                if gap_rect.colliderect(car.rect):
+                    self.rect.x = init_x
+                    self.rect.y = init_y
 
-    def _move_from_left(self):
+    def _move_from_left(self, car_list):
+        init_x = self.rect.x
+        init_y = self.rect.y
         if (
             self.intersection.lights[3] == "red"
             and self.rect.x + CAR_SPEED
@@ -508,13 +550,23 @@ class Car:
                         self.init_location = Location.UP
                         self._choose_path()
                         self._position()
+        for car in car_list:
+            if self.orientation == Orientation.HORIZONTAL:
+                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_WIDTH + 5, CAR_HEIGHT)
+            else:
+                gap_rect = pygame.Rect(self.rect.x, self.rect.y, CAR_HEIGHT, CAR_WIDTH + 5)
+            if car.id != self.id:
+                if gap_rect.colliderect(car.rect):
+                    self.rect.x = init_x
+                    self.rect.y = init_y
 
-    def move(self):
+    def move(self, car_list):
         if self.init_location == Location.UP:
-            self._move_from_up()
+            self._move_from_up(car_list)
         elif self.init_location == Location.RIGHT:
-            self._move_from_right()
+            self._move_from_right(car_list)
         elif self.init_location == Location.DOWN:
-            self._move_from_down()
+            self._move_from_down(car_list)
         elif self.init_location == Location.LEFT:
-            self._move_from_left()
+            self._move_from_left(car_list)
+

@@ -9,6 +9,7 @@ from constants import (
     WINDOW_HEIGHT,
     FPS,
     Location,
+    Orientation,
 )
 from objects.car import Car
 from objects.intersection import Intersection
@@ -45,9 +46,9 @@ class Environment:
         )
 
         self.car_list = []
-        self.car_list.append(Car(Location.UP, Location.RIGHT, self.intersections[0]))
-        self.car_list.append(Car(Location.RIGHT, Location.LEFT, self.intersections[0]))
-        self.car_list.append(Car(Location.DOWN, Location.UP, self.intersections[0]))
+        self.car_list.append(Car(1, Location.UP, Location.RIGHT, self.intersections[0]))
+        self.car_list.append(Car(2, Location.RIGHT, Location.LEFT, self.intersections[0]))
+        self.car_list.append(Car(3, Location.DOWN, Location.UP, self.intersections[0]))
 
     def draw_background(self):
         self.window.fill(BLACK)
@@ -101,7 +102,7 @@ class Environment:
         
         self.time -= 1
         if self.time == 0:
-            self.car_list.append(Car(Location.UP, Location.RIGHT, self.intersections[0]))
+            self.car_list.append(Car(4, Location.UP, Location.RIGHT, self.intersections[0]))
 
         for car in self.car_list:
             if car.intersection is None:
@@ -109,12 +110,22 @@ class Environment:
             else:
                 init_x = car.rect.x
                 init_y = car.rect.y
-                car.move()
-                for car2 in self.car_list:
-                    if car2 != car and car2.rect.colliderect(car.rect):
-                        car.rect.x = init_x
-                        car.rect.y = init_y
-                        break
+                car.move(self.car_list)
+                # for car2 in self.car_list:
+                #     if car2 != car and car2.rect.colliderect(car.rect):
+                #         print(f"Collision between {car.id} and {car2.id}")
+                #         if(car.init_location == Location.UP):
+                #             print("UP")
+                #             init_y -= 5
+                #         elif(car.init_location == Location.RIGHT):
+                #             init_x -= 5
+                #         elif(car.init_location == Location.DOWN):
+                #             init_y += 5
+                #         elif(car.init_location == Location.LEFT):
+                #             init_x += 5
+                #         car.rect.x = init_x
+                #         car.rect.y = init_y
+                #         break
                 
 
         self.update_ui()
