@@ -17,6 +17,8 @@ CAR_WIDTH = 40
 CAR_HEIGHT = 20
 CAR_SPEED = 2
 
+STEP_TIME = 100
+
 class Location(Enum):
     UP = 0
     RIGHT = 1
