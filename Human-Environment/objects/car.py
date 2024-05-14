@@ -29,6 +29,7 @@ class Car:
         if self.orientation == Orientation.N or self.orientation == Orientation.S:
             self.rect = pygame.Rect(0, 0, CAR_HEIGHT, CAR_WIDTH)
         self._position()
+        self._set_life()
 
     def _set_orientation(self):
         if self.init_location == Location.UP:
@@ -57,9 +58,15 @@ class Car:
             self.rect.width = CAR_WIDTH
             self.rect.height = CAR_HEIGHT
 
-    def _create_life(self):
-        random_number = random.randint(0, 2)
+    def _set_life(self):
+        random_number = random.randint(1, 4)
         self.life = random_number * 100
+        
+    def _drain_life(self):
+        self.life -= 1
+        
+    def _increase_life(self):
+        self.life += 40
 
     def _position(self):
         if self.init_location == Location.UP:
@@ -194,6 +201,7 @@ class Car:
             - CAR_WIDTH
             + CAR_SPEED
         ):
+            self._drain_life()
             return
         if self.final_location == Location.RIGHT:
             if (
@@ -277,6 +285,7 @@ class Car:
             + 2 * 5
             - CAR_SPEED
         ):
+            self._drain_life()
             return
         if self.final_location == Location.DOWN:
             if (
@@ -382,6 +391,7 @@ class Car:
             - 2 * 5
             - CAR_SPEED
         ):
+            self._drain_life()
             return
         if self.final_location == Location.LEFT:
             if (
@@ -493,6 +503,7 @@ class Car:
             - CAR_WIDTH
             + CAR_SPEED
         ):
+            self._drain_life()
             return
         if self.final_location == Location.UP:
             if (

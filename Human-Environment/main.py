@@ -13,12 +13,13 @@ from constants import (
 from objects.car import Car
 from objects.intersection import Intersection
 
-# font = pygame.font.Font('arial.ttf', 25)
+pygame.init()
+font = pygame.font.Font('arial.ttf', 25)
 
 class Environment:
     def __init__(self, w=WINDOW_WIDTH, h=WINDOW_HEIGHT):
         self.view_collision = False
-        self.time = 100
+        # self.time = 100
         self.width = w
         self.height = h
         self.window = pygame.display.set_mode((w, h))
@@ -47,10 +48,10 @@ class Environment:
             {"top": self.intersections[0], "right": None, "bottom": None, "left": None}
         )
         
-        self.health = 20000
+        self.health = 2_000
 
-        self.car_list = []
-        # self.car_list.append(Car(Location.UP, Location.DOWN, self.intersections[0]))
+        self.car_list: list[Car] = []
+        self.car_list.append(Car(Location.UP, Location.DOWN, self.intersections[0]))
         # self.car_list.append(Car(Location.RIGHT, Location.DOWN, self.intersections[0]))
         # self.car_list.append(Car(Location.DOWN, Location.RIGHT, self.intersections[0]))
         # self.car_list.append(Car(Location.LEFT, Location.RIGHT, self.intersections[1]))
@@ -63,9 +64,12 @@ class Environment:
             interaction.draw(self.window)
             
     def _draw_health(self):
-        pass
-        # text = font.render(f"Health: {self.health}", True, (255, 255, 255))
-        # self.window.blit(text, (10, 10))
+        health_text = font.render(f"Health: {self.health}", True, (255, 255, 255))
+        self.window.blit(health_text, (10, 10))
+        self.health -= 1
+        
+    def _increase_health(self, amount):
+        self.health += amount
 
     def update_ui(self):
         self.draw_background()
@@ -73,8 +77,8 @@ class Environment:
             car.draw(self.window, self.view_collision)
         self._draw_health()
         pygame.display.update()
-
-    def step(self):
+        
+    def _manual_control(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -106,10 +110,10 @@ class Environment:
                     self.intersections[2].change_light(3)
                 if event.key == pygame.K_c:
                     self.view_collision = not self.view_collision
-
+                    
+    def spawn_car_mechanism(self):
         random_number = random.randint(0, 100)
         if random_number == 10:
-            print(f"new car - {self.car_list.__len__()}")
             random_intersection = random.choice(self.intersections)
             spawn_locations_list = []
             for neighbour in random_intersection.neighbours:
@@ -137,9 +141,13 @@ class Environment:
             if is_valid:
                 self.car_list.append(new_car)
 
-        self.time -= 1
-        if self.time == 0:
-            self.time = 100
+    def step(self):
+        self._manual_control()
+        # self.spawn_car_mechanism()
+
+        # self.time -= 1
+        # if self.time == 0:
+            # self.time = 100
             # self.car_list.append(Car(Location.UP, Location.LEFT, self.intersections[1]))
             # self.car_list.append(Car(Location.LEFT, Location.RIGHT, self.intersections[1]))
             # self.car_list.append(Car(Location.UP, Location.LEFT, self.intersections[1]))
@@ -149,13 +157,14 @@ class Environment:
 
         for car in self.car_list:
             if car.intersection is None:
+                self._increase_health(car.life)
+                print(f"Car {car.id} has reached its destination with {car.life} life.")
                 self.car_list.remove(car)
             else:
                 car.move(self.car_list)
 
         self.update_ui()
         self.clock.tick(FPS)
-
 
 if __name__ == "__main__":
     env = Environment()
