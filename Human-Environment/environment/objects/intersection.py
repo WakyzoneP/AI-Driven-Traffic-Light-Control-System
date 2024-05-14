@@ -1,7 +1,7 @@
 import pygame
 
-from colors import GRAY, WHITE
-from constants import (
+from ..colors import GRAY, WHITE
+from ..constants import (
     INTERSECTION_WIDTH,
     INTERSECTION_HEIGHT,
     ROAD_WIDTH,

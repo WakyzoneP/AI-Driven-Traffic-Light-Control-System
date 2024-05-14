@@ -2,8 +2,8 @@ import random
 import uuid
 import pygame
 
-from colors import RED, GREEN
-from constants import (
+from ..colors import RED, GREEN
+from ..constants import (
     CAR_SPEED,
     CAR_WIDTH,
     CAR_HEIGHT,
@@ -12,7 +12,7 @@ from constants import (
     Location,
     Orientation,
 )
-from objects.intersection import Intersection
+from ..objects.intersection import Intersection
 
 
 class Car:
