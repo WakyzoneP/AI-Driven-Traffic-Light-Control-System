@@ -13,6 +13,7 @@ from constants import (
 from objects.car import Car
 from objects.intersection import Intersection
 
+# font = pygame.font.Font('arial.ttf', 25)
 
 class Environment:
     def __init__(self, w=WINDOW_WIDTH, h=WINDOW_HEIGHT):
@@ -45,6 +46,8 @@ class Environment:
         self.intersections[2].set_neighbours(
             {"top": self.intersections[0], "right": None, "bottom": None, "left": None}
         )
+        
+        self.health = 20000
 
         self.car_list = []
         # self.car_list.append(Car(Location.UP, Location.DOWN, self.intersections[0]))
@@ -58,12 +61,17 @@ class Environment:
         self.window.fill(BLACK)
         for interaction in self.intersections:
             interaction.draw(self.window)
+            
+    def _draw_health(self):
+        pass
+        # text = font.render(f"Health: {self.health}", True, (255, 255, 255))
+        # self.window.blit(text, (10, 10))
 
     def update_ui(self):
         self.draw_background()
         for car in self.car_list:
             car.draw(self.window, self.view_collision)
-
+        self._draw_health()
         pygame.display.update()
 
     def step(self):
