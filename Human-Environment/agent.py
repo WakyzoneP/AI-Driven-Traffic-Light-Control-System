@@ -11,14 +11,6 @@ BATCH_SIZE = 1000
 LR = 0.001
 
 
-def convert_to_base_4(num):
-    base_4 = [0, 0, 0]
-    for i in range(3):
-        base_4[i] = num % 4
-        num //= 4
-    return base_4
-
-
 class Agent:
     def __init__(self):
         self.n_games = 0
@@ -47,19 +39,17 @@ class Agent:
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 400 - self.n_games
-        final_move = [0, 0, 0]
+        self.epsilon = 80 - self.n_games
+        final_move = [0 for _ in range(64)]
         if random.randint(0, 200) < self.epsilon:
-            for i in range(3):
-                move = random.randint(0, 3)
-                final_move[i] = move
+            move = random.randint(0, 63)
+            final_move[move] = 1
         else:
             state0 = torch.tensor(state, dtype=torch.float)
             prediction = self.model(state0)
             move = torch.argmax(prediction).item()
-            print(f"Prediction: {prediction} Move: {move}")
-            final_move = convert_to_base_4(move)
-
+            print(f"Prediction: {prediction} \nMove: {move}")
+            final_move[move] = 1
         return final_move
 
 
@@ -77,8 +67,10 @@ def train():
         if env.can_make_step():
             old_state = env.generate_state()
             final_move = agent.get_action(old_state)
+            
+            move_index = np.argmax(final_move)
 
-            reward, score = env.step(final_move)
+            reward, score = env.step(move_index)
             new_state = env.generate_state()
             print(f"Reward: {reward}")
 

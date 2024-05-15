@@ -1,3 +1,4 @@
+from lib2to3.pytree import convert
 import random
 import pygame
 import numpy as np
@@ -230,9 +231,20 @@ class Environment:
         self.clock.tick(FPS * self.speed_increment)
 
         return game_over, self.score
+    
+    def convert_to_base_4(self, num):
+        base_4 = [0, 0, 0]
+        for i in range(3):
+            base_4[i] = num % 4
+            num //= 4
+        return base_4
+    
+    def convert_action(self, action: int):
+        return self.convert_to_base_4(action)
 
-    def step(self, actions: list):
+    def step(self, action):
+        action = self.convert_action(action)
         self.can_change_time = STEP_TIME
-        self._change_light(actions)
+        self._change_light(action)
 
         return self.reward, self.score
