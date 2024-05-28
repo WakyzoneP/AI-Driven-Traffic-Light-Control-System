@@ -70,6 +70,7 @@ class Car:
         self.life -= 1
 
     def _position(self):
+        self.crossed = False
         if self.init_location == Location.UP:
             self.rect.x = (
                 self.intersection.x
@@ -225,6 +226,7 @@ class Car:
                         - CAR_WIDTH // 4
                     )
                     self._change_orientation()
+                    self.crossed = True
                     # self._increase_life()
             elif self.rect.x < self.intersection.x + self.intersection.width:
                 self.rect.x += CAR_SPEED
@@ -237,7 +239,9 @@ class Car:
         if self.final_location == Location.DOWN:
             if self.rect.y < self.intersection.y + self.intersection.height:
                 self.rect.y += CAR_SPEED
-            elif self.rect.y >= self.intersection.y + self.intersection.height:
+                if self.rect.y > (self.intersection.y + self.intersection.height) // 2:
+                    self.crossed = True
+            elif self.rect.y >= self.intersection.y + self.intersection.height:            
                 # self._increase_life()
                 self.intersection = self.intersection.neighbours["bottom"]
                 if self.intersection is not None:
@@ -265,6 +269,7 @@ class Car:
                         // 2
                     )
                     self._change_orientation()
+                    self.crossed = True
                     # self._increase_life()
             elif self.rect.x > self.intersection.x - CAR_WIDTH:
                 self.rect.x -= CAR_SPEED
@@ -327,6 +332,7 @@ class Car:
                         // 2
                     )
                     self._change_orientation()
+                    self.crossed = True
                     # self._increase_life()
             elif self.rect.y < self.intersection.y + self.intersection.height:
                 self.rect.y += CAR_SPEED
@@ -339,6 +345,8 @@ class Car:
         if self.final_location == Location.LEFT:
             if self.rect.x > self.intersection.x - CAR_WIDTH:
                 self.rect.x -= CAR_SPEED
+                if self.rect.x <= (self.intersection.x - CAR_WIDTH) // 2:
+                    self.crossed = True
             elif self.rect.x <= self.intersection.x - CAR_WIDTH:
                 self.intersection = self.intersection.neighbours["left"]
                 # self._increase_life()
@@ -374,6 +382,7 @@ class Car:
                         self.intersection.y + self.intersection.height // 2 - CAR_WIDTH
                     )
                     self._change_orientation()
+                    self.crossed = True
                     # self._increase_life()
             elif self.rect.y > self.intersection.y - CAR_WIDTH:
                 self.rect.y -= CAR_SPEED
@@ -436,6 +445,7 @@ class Car:
                         // 2
                     )
                     self._change_orientation()
+                    self.crossed = True
                     # self._increase_life()
             elif self.rect.x > self.intersection.x - CAR_WIDTH:
                 self.rect.x -= CAR_SPEED
@@ -448,6 +458,8 @@ class Car:
         if self.final_location == Location.UP:
             if self.rect.y > self.intersection.y - CAR_WIDTH:
                 self.rect.y -= CAR_SPEED
+                if self.rect.y <= (self.intersection.y - CAR_WIDTH) // 2:
+                    self.crossed = True
             elif self.rect.y <= self.intersection.y - CAR_WIDTH:
                 self.intersection = self.intersection.neighbours["top"]
                 # self._increase_life()
@@ -485,6 +497,7 @@ class Car:
                         + CAR_WIDTH // 2
                     )
                     self._change_orientation()
+                    self.crossed = True
                     # self._increase_life()
             elif self.rect.x < self.intersection.x + self.intersection.width:
                 self.rect.x += CAR_SPEED
@@ -551,6 +564,7 @@ class Car:
                         // 2
                     )
                     self._change_orientation()
+                    self.crossed = True
                     # # self._increase_life()
             elif self.rect.y > self.intersection.y - CAR_WIDTH:
                 self.rect.y -= CAR_SPEED
@@ -563,6 +577,8 @@ class Car:
         if self.final_location == Location.RIGHT:
             if self.rect.x < self.intersection.x + self.intersection.width:
                 self.rect.x += CAR_SPEED
+                if self.rect.x >= (self.intersection.x + self.intersection.width) // 2:
+                    self.crossed = True
             elif self.rect.x >= self.intersection.x + self.intersection.width:
                 self.intersection = self.intersection.neighbours["right"]
                 # # self._increase_life()
@@ -605,6 +621,7 @@ class Car:
                         // 2
                     )
                     self._change_orientation()
+                    self.crossed = True
                     # # self._increase_life()
             elif self.rect.y < self.intersection.y + self.intersection.height:
                 self.rect.y += CAR_SPEED

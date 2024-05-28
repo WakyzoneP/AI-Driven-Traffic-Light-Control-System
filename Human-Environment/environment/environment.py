@@ -1,4 +1,3 @@
-from lib2to3.pytree import convert
 import random
 import pygame
 import numpy as np
@@ -161,8 +160,7 @@ class Environment:
         return True
 
     def generate_state(self):
-        # first row contains how many cars are on each branch of an intersection (3*4 elements)
-        # second row contains the state of the traffic light (3*4 elements)
+        # first row contains the sum of the life of the cars in the intersection
         # third row contains the health of the agent
         state = [0 for _ in range(12)]
         for car in self.car_list:
@@ -170,14 +168,26 @@ class Environment:
                 continue
             car_intersection_index = self.intersections.index(car.intersection)
             init_location = car.init_location
-            if init_location == Location.UP:
-                state[car_intersection_index * 4] += car.life
-            elif init_location == Location.RIGHT:
-                state[car_intersection_index * 4 + 1] += car.life
-            elif init_location == Location.DOWN:
-                state[car_intersection_index * 4 + 2] += car.life
-            elif init_location == Location.LEFT:
-                state[car_intersection_index * 4 + 3] += car.life
+            final_location = car.final_location
+            crossed = car.crossed
+            if not crossed:
+                if init_location == Location.UP:
+                    state[car_intersection_index * 4] += car.life
+                elif init_location == Location.RIGHT:
+                    state[car_intersection_index * 4 + 1] += car.life
+                elif init_location == Location.DOWN:
+                    state[car_intersection_index * 4 + 2] += car.life
+                elif init_location == Location.LEFT:
+                    state[car_intersection_index * 4 + 3] += car.life
+            else:
+                if final_location == Location.UP:
+                    state[car_intersection_index * 4] += car.life
+                elif final_location == Location.RIGHT:
+                    state[car_intersection_index * 4 + 1] += car.life
+                elif final_location == Location.DOWN:
+                    state[car_intersection_index * 4 + 2] += car.life
+                elif final_location == Location.LEFT:
+                    state[car_intersection_index * 4 + 3] += car.life
         # for intersection in self.intersections:
         #     for light in intersection.lights:
         #         if light == "red":
@@ -224,8 +234,8 @@ class Environment:
             game_over = True
             self.reward -= 1.25
             
-        if(self.reward < -2):
-            self.reward = -2
+        # if(self.reward < -2):
+        #     self.reward = -2
 
         self._update_ui()
         self.clock.tick(FPS * self.speed_increment)

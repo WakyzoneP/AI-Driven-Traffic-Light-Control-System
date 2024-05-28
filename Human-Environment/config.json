@@ -1,0 +1,24 @@
+{
+    "number_of_intersections": 3,
+    "traffic_severity": 5,
+    "intersections": [
+        {
+            "N": null,
+            "E": 1,
+            "S": 2,
+            "W": null
+        },
+        {
+            "N": null,
+            "E": null,
+            "S": null,
+            "W": 1
+        },
+        {
+            "N": 1,
+            "E": null,
+            "S": null,
+            "W": null
+        }
+    ]
+}
