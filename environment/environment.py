@@ -11,6 +11,7 @@ from .constants import (
     FPS,
     Location,
     STEP_TIME,
+    EnvType
 )
 from .objects.car import Car
 from .objects.intersection import Intersection
@@ -18,20 +19,24 @@ from .objects.intersection import Intersection
 pygame.init()
 font = pygame.font.Font("arial.ttf", 25)
 
-SPEED_INCREMENT = 1
-
 
 class Environment:
-    def __init__(self, w=WINDOW_WIDTH, h=WINDOW_HEIGHT):
-        self.speed_increment = SPEED_INCREMENT
+    def __init__(self, w=WINDOW_WIDTH, h=WINDOW_HEIGHT, show_ui=True, env_type=EnvType.TRAINING):
+        self.env_type = env_type
+        self.show_ui = show_ui
+        self.speed_increment = 1 if show_ui else 100
         self.can_change_time = STEP_TIME / self.speed_increment
         self.score = 0
         self.view_collision = False
         self.width = w
         self.height = h
-        self.window = pygame.display.set_mode((w, h))
-        pygame.display.set_caption("Environment Simulation")
+        
+        if self.show_ui:
+            self.window = pygame.display.set_mode((w, h))
+            pygame.display.set_caption("Environment Simulation")
+
         self.clock = pygame.time.Clock()
+        
         self.intersections: list[Intersection] = []
         self.intersections.append(Intersection(TOP_LEFT[0], TOP_LEFT[1]))
         self.intersections.append(
@@ -55,15 +60,11 @@ class Environment:
             {"top": self.intersections[0], "right": None, "bottom": None, "left": None}
         )
 
-        self.health = 2_000
+        self.health = 3_500
+        self.passed_cars = 0
+        self.faults = 0
 
         self.car_list: list[Car] = []
-        # self.car_list.append(Car(Location.UP, Location.DOWN, self.intersections[0]))
-        # self.car_list.append(Car(Location.RIGHT, Location.DOWN, self.intersections[0]))
-        # self.car_list.append(Car(Location.DOWN, Location.RIGHT, self.intersections[0]))
-        # self.car_list.append(Car(Location.LEFT, Location.RIGHT, self.intersections[1]))
-        # self.car_list.append(Car(Location.UP, Location.LEFT, self.intersections[1]))
-        # self.car_list.append(Car(Location.UP, Location.LEFT, self.intersections[1]))
 
     def _draw_background(self):
         self.window.fill(BLACK)
@@ -149,7 +150,7 @@ class Environment:
             is_valid = True
             for car in self.car_list:
                 if car.rect.colliderect(new_car.rect):
-                    print("Cannot spawn car, intersection is occupied.")
+                    # print("Cannot spawn car, intersection is occupied.")
                     is_valid = False
                     break
             if is_valid:
@@ -188,12 +189,6 @@ class Environment:
                     state[car_intersection_index * 4 + 2] += car.life
                 elif final_location == Location.LEFT:
                     state[car_intersection_index * 4 + 3] += car.life
-        # for intersection in self.intersections:
-        #     for light in intersection.lights:
-        #         if light == "red":
-        #             state.append(0)
-        #         else:
-        #             state.append(1)
         state.append(self.health)
 
         return np.array(state, dtype=np.int32)
@@ -203,44 +198,34 @@ class Environment:
         self.health = 2_000
         self.car_list = []
 
-    def can_make_step(self):
-        return self.can_change_time == 0
-
     def run(self):
         self.health -= 1
         self.can_change_time -= 1
-        self.reward = -0.005
         self._manual_control()
         could_spawn = self._spawn_car_mechanism()
-        sum = 0
-        for car in self.car_list:
-            sum += car.reward
-        self.reward += sum
-        self.reward /= len(self.car_list) + 1
         for car in self.car_list:
             if car.intersection is None:
                 self._increase_health(car.life)
                 self.score += 1
                 self.car_list.remove(car)
+                self.passed_cars += 1
             else:
                 car.move(self.car_list)
 
         if not could_spawn:
             self.health -= 100
-            self.reward -= 1.25
+            self.faults += 1
 
         game_over = False
-        if self.health < 0:
+        if self.health < 0 and self.env_type == EnvType.TRAINING:
             game_over = True
-            self.reward -= 1.25
-            
-        # if(self.reward < -2):
-        #     self.reward = -2
+            self.faults += 10
 
-        self._update_ui()
+        if self.show_ui:
+            self._update_ui()
         self.clock.tick(FPS * self.speed_increment)
 
-        return game_over, self.score
+        return game_over
     
     def convert_to_base_4(self, num):
         base_4 = [0, 0, 0]
@@ -249,12 +234,28 @@ class Environment:
             num //= 4
         return base_4
     
-    def convert_action(self, action: int):
+    def _convert_action(self, action: int):
         return self.convert_to_base_4(action)
+    
+    def _reward_calculator(self):
+        for car in self.car_list:
+            if car.intersection is not None:
+                self.faults += 6
+        return 0.05 + self.passed_cars * 0.1 - self.faults * 0.01
 
     def step(self, action):
-        action = self.convert_action(action)
-        self.can_change_time = STEP_TIME
+        action = self._convert_action(action)
+        self.can_change_time = STEP_TIME / self.speed_increment
         self._change_light(action)
+        
+        game_over = False
+        
+        while self.can_change_time != 0 and not game_over:
+            game_over = self.run()
+            
+        
+        reward = self._reward_calculator()
+        self.passed_cars = 0
+        self.faults = 0
 
-        return self.reward, self.score
+        return reward, self.score, game_over

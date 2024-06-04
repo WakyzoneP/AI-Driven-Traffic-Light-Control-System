@@ -179,7 +179,8 @@ class Car:
             self.col_rect = pygame.Rect(self.rect.x - 5, self.rect.y, 5, CAR_HEIGHT)
         for car in car_list:
             if self.id != car.id and car.rect.colliderect(self.rect):
-                print(f"Hit car at {self.intersection.id}")
+                # print(f"Hit car at {self.intersection.id}")
+                pass
             if car.rect.colliderect(self.col_rect):
                 self._drain_life()
                 self.rect.x = init_x

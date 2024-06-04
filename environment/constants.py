@@ -17,7 +17,7 @@ CAR_WIDTH = 40
 CAR_HEIGHT = 20
 CAR_SPEED = 2
 
-STEP_TIME = 100
+STEP_TIME = 150
 
 class Location(Enum):
     UP = 0
@@ -30,3 +30,7 @@ class Orientation(Enum):
     E = 1
     S = 2
     W = 3
+    
+class EnvType(Enum):
+    SIMULATION = 0
+    TRAINING = 1
