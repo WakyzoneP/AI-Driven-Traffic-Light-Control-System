@@ -1,17 +1,17 @@
 {
-    "traffic_severity": 5,
+    "traffic_severity": 1,
     "intersections": [
         {
-            "X": 0,
-            "Y": 0
+            "X": 1,
+            "Y": 1
         },
         {
             "X": 0,
             "Y": 1
         },
         {
-            "X": 0,
-            "Y": 2
+            "X": 1,
+            "Y": 0
         }
     ]
 }

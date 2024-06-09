@@ -1,68 +1,66 @@
 import pygame
 
 from ..colors import GRAY, WHITE
-from ..constants import (
-    INTERSECTION_WIDTH,
-    INTERSECTION_HEIGHT,
-    ROAD_WIDTH,
-    LINE_WIDTH,
-    LINE_LENGTH,
-    LINE_SPACING,
-)
 
 
 class Intersection:
     intersection_count = 0
-    def __init__(self, x, y, w=INTERSECTION_WIDTH, h=INTERSECTION_HEIGHT):
+    def __init__(self, x, y, width, height, road_width, light_width, line_width, line_length, line_spacing):
         Intersection.intersection_count += 1
         self.id = Intersection.intersection_count
         self.x = x
         self.y = y
-        self.width = w
-        self.height = h
+        self.width = width
+        self.height = height
+        self.road_width = road_width
+        self.light_width = light_width
+        self.line_width = line_width
+        self.line_length = line_length
+        self.line_spacing = line_spacing
         self.color = GRAY
         self.lights = ["red" for _ in range(4)]
         self.neighbours = {"top": None, "right": None, "bottom": None, "left": None}
 
     def _draw_lights(self, window):
+        # North light
         pygame.draw.rect(
             window,
             self.lights[0],
             (
-                self.x + (self.width - ROAD_WIDTH) // 2,
-                self.y + (self.height - ROAD_WIDTH) // 2 - 5,
-                (ROAD_WIDTH - LINE_WIDTH) / 2,
-                5,
+                self.x + (self.width - self.road_width) // 2,
+                self.y + (self.height - self.road_width) // 2 - self.light_width,
+                (self.road_width - self.line_width) // 2,
+                self.light_width,
             ),
         )
         pygame.draw.rect(
             window,
             self.lights[1],
             (
-                self.x + (self.width + ROAD_WIDTH) // 2,
-                self.y + (self.height - ROAD_WIDTH) // 2,
-                5,
-                (ROAD_WIDTH - LINE_WIDTH) / 2,
+                self.x + (self.width + self.road_width) // 2,
+                self.y + (self.height - self.road_width) // 2,
+                self.light_width,
+                (self.road_width - self.line_width) // 2,
             ),
         )
         pygame.draw.rect(
             window,
             self.lights[2],
             (
-                self.x + (self.width) // 2 + 5,
-                self.y + (self.height + ROAD_WIDTH) // 2,
-                (ROAD_WIDTH - LINE_WIDTH) / 2,
-                5,
+                self.x + (self.width) // 2 + self.light_width,
+                self.y + (self.height + self.road_width) // 2,
+                (self.road_width - self.line_width) // 2,
+                self.light_width,
             ),
         )
         pygame.draw.rect(
             window,
             self.lights[3],
             (
-                self.x + (self.width - ROAD_WIDTH) // 2 - 5,
-                self.y + (self.height) // 2 + 5,
-                5,
-                (ROAD_WIDTH - LINE_WIDTH) / 2,
+                self.x + (self.width - self.road_width) // 2 - self.light_width,
+                self.y + (self.height) // 2 + self.light_width,
+                self.light_width,
+                (self.road_width - self.line_width) // 2,
             ),
         )
 
@@ -70,34 +68,34 @@ class Intersection:
         pygame.draw.rect(
             window,
             self.color,
-            (self.x + (self.width - ROAD_WIDTH) // 2, self.y, ROAD_WIDTH, self.height),
+            (self.x + (self.width - self.road_width) // 2, self.y, self.road_width, self.height),
         )
         pygame.draw.rect(
             window,
             self.color,
-            (self.x, self.y + (self.height - ROAD_WIDTH) // 2, self.width, ROAD_WIDTH),
+            (self.x, self.y + (self.height - self.road_width) // 2, self.width, self.road_width),
         )
         for i in range(
-            0, (self.width - LINE_SPACING) // (LINE_SPACING + LINE_LENGTH) + 1
+            0, int((self.width - self.line_spacing) // (self.line_spacing + self.line_length)) + 1
         ):
             pygame.draw.rect(
                 window,
                 WHITE,
                 (
-                    self.x + (self.width - LINE_WIDTH) // 2,
-                    self.y + i * (LINE_SPACING + LINE_LENGTH),
-                    LINE_WIDTH,
-                    LINE_LENGTH,
+                    self.x + (self.width - self.line_width) // 2,
+                    self.y + i * (self.line_spacing + self.line_length),
+                    self.line_width,
+                    self.line_length,
                 ),
             )
             pygame.draw.rect(
                 window,
                 WHITE,
                 (
-                    self.x + i * (LINE_SPACING + LINE_LENGTH),
-                    self.y + (self.height - LINE_WIDTH) // 2,
-                    LINE_LENGTH,
-                    LINE_WIDTH,
+                    self.x + i * (self.line_spacing + self.line_length),
+                    self.y + (self.height - self.line_width) // 2,
+                    self.line_length,
+                    self.line_width,
                 ),
             )
         self._draw_lights(window)

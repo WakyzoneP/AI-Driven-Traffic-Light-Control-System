@@ -18,6 +18,18 @@ def plot(scores, mean_scores):
     plt.show(block=False)
     plt.pause(.1)
     
+def means_plot(mean_scores):
+    display.clear_output(wait=True)
+    display.display(plt.gcf())
+    plt.clf()
+    plt.title('Training...')
+    plt.xlabel('Number of Games')
+    plt.ylabel('Mean Score')
+    plt.plot(mean_scores)
+    plt.ylim(ymin=0)
+    plt.text(len(mean_scores)-1, mean_scores[-1], str(mean_scores[-1]))
+    plt.show(block=False)
+    
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
