@@ -21,7 +21,6 @@ from .constants import (
     Location,
     STEP_TIME,
     EnvType,
-    MAX_SPEED_INCREMENT,
     ENV_HEALTH,
 )
 from .objects.car import Car
@@ -43,7 +42,7 @@ class Environment:
     ):
         self.env_type = env_type
         self.show_ui = show_ui
-        self.speed_increment = 1 if show_ui else MAX_SPEED_INCREMENT
+        self.speed_increment = 1
         self.can_change_time = STEP_TIME
         self.score = 0
         self.view_collision = False
@@ -55,23 +54,14 @@ class Environment:
             self.window = pygame.display.set_mode((w, h))
             pygame.display.set_caption("Environment Simulation")
 
-        self.clock = pygame.time.Clock()
+        if self.env_type == EnvType.SIMULATION:
+            self.clock = pygame.time.Clock()
         self._create_intersections(intersections_json)
 
         self.passed_cars = 0
         self.faults = 0
 
         self.car_list: list[Car] = []
-        self.car_list.append(
-            Car(
-                CAR_WIDTH * self.inhance,
-                CAR_HEIGHT * self.inhance,
-                Location.UP,
-                Location.RIGHT,
-                self.intersections[0],
-                CAR_SPEED,
-            )
-        )
 
     def _create_intersections(self, intersections_json):
         number_of_intersections = len(intersections_json)
@@ -89,16 +79,40 @@ class Environment:
             matrix[x][y] = index
             index += 1
 
-        max_shape = max(matrix.shape)
-        self.health = ENV_HEALTH * max_shape
+        line = 0
+        while line < matrix.shape[0]:
+            zeros = 0
+            for column in range(matrix.shape[1]):
+                if matrix[line][column] == 0:
+                    zeros += 1
+                else:
+                    break
+            if zeros == matrix.shape[1]:
+                matrix = np.delete(matrix, line, 0)
+                line -= 1
+            line += 1
+
+        column = 0
+        while column < matrix.shape[1]:
+            zeros = 0
+            for line in range(matrix.shape[0]):
+                if matrix[line][column] == 0:
+                    zeros += 1
+                else:
+                    break
+            if zeros == matrix.shape[0]:
+                matrix = np.delete(matrix, column, 1)
+                column -= 1
+            column += 1
+
+        self.max_shape = max(matrix.shape)
+        self.health = ENV_HEALTH * self.max_shape
 
         self.inhance = 0
-        while max_shape * INTERSECTION_HEIGHT * self.inhance < self.height - 100:
+        while self.max_shape * INTERSECTION_HEIGHT * self.inhance <= self.height - 100:
             self.inhance += 1
 
         self.inhance -= 1
-
-        print(self.inhance)
 
         self.intersections: list[Intersection] = [
             None for _ in range(number_of_intersections)
@@ -123,34 +137,32 @@ class Environment:
                 )
                 self.intersections[matrix[line][column] - 1] = intersection
 
-        print(self.intersections)
-
-        for intersection in intersections_json:
-            x = intersection["X"]
-            y = intersection["Y"]
-            neighbours = {
-                "top": (
-                    self.intersections[matrix[x - 1][y] - 1]
-                    if x - 1 >= 0 and matrix[x - 1][y] != 0
-                    else None
-                ),
-                "right": (
-                    self.intersections[matrix[x][y + 1] - 1]
-                    if y + 1 < matrix.shape[1] and matrix[x][y + 1] != 0
-                    else None
-                ),
-                "bottom": (
-                    self.intersections[matrix[x + 1][y] - 1]
-                    if x + 1 < matrix.shape[0] and matrix[x + 1][y] != 0
-                    else None
-                ),
-                "left": (
-                    self.intersections[matrix[x][y - 1] - 1]
-                    if y - 1 >= 0 and matrix[x][y - 1] != 0
-                    else None
-                ),
-            }
-            self.intersections[matrix[x][y] - 1].set_neighbours(neighbours)
+        for line in range(matrix.shape[0]):
+            for column in range(matrix.shape[1]):
+                neighbours = {
+                    "top": (
+                        self.intersections[matrix[line - 1][column] - 1]
+                        if line - 1 >= 0 and matrix[line - 1][column] != 0
+                        else None
+                    ),
+                    "right": (
+                        self.intersections[matrix[line][column + 1] - 1]
+                        if column + 1 < matrix.shape[1]
+                        and matrix[line][column + 1] != 0
+                        else None
+                    ),
+                    "bottom": (
+                        self.intersections[matrix[line + 1][column] - 1]
+                        if line + 1 < matrix.shape[0] and matrix[line + 1][column] != 0
+                        else None
+                    ),
+                    "left": (
+                        self.intersections[matrix[line][column - 1] - 1]
+                        if column - 1 >= 0 and matrix[line][column - 1] != 0
+                        else None
+                    ),
+                }
+                self.intersections[matrix[line][column] - 1].set_neighbours(neighbours)
 
     def _draw_background(self):
         self.window.fill(BLACK)
@@ -205,7 +217,7 @@ class Environment:
 
     def _spawn_car_mechanism(self):
         random_number = random.randint(0, 10 * self.traffic_level)
-        if random_number == 10:
+        if random_number == 1:
             spawn_locations_list = self._get_spawn_locations()
             init_location, intersection = random.choice(spawn_locations_list)
             final_locations = [
@@ -218,7 +230,7 @@ class Environment:
                 init_location,
                 final_location,
                 intersection,
-                CAR_SPEED,
+                CAR_SPEED * self.inhance,
             )
             is_valid = True
             for car in self.car_list:
@@ -229,9 +241,8 @@ class Environment:
                 self.car_list.append(new_car)
 
     def generate_state(self):
-        # first row contains the sum of the life of the cars in the intersection
-        # third row contains the health of the agent
-        state = [0 for _ in range(12)]
+        # contains the sum of the life of the cars in the intersection
+        state = [0 for _ in range(len(self.intersections) * 4)]
         for car in self.car_list:
             if car.intersection is None:
                 continue
@@ -261,7 +272,7 @@ class Environment:
         return np.array(state, dtype=np.int32)
 
     def reset(self):
-        self.health = ENV_HEALTH
+        self.health = ENV_HEALTH * self.max_shape
         self.score = 0
         self.car_list = []
 
@@ -326,13 +337,13 @@ class Environment:
                 self.faults += 0.04
 
         return 0.05 + self.passed_cars - self.faults
-    
+
     def _reward_calculator1(self):
         sum_of_rewards = 0
         for car in self.car_list:
             if car.intersection is not None:
                 sum_of_rewards += car.reward
-                
+
         return sum_of_rewards + self.passed_cars * 0.1 - self.faults * 0.1
 
     def step(self, action):

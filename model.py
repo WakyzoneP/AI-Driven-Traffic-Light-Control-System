@@ -8,10 +8,10 @@ class Linear_QNet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, device):
         super().__init__()
         self.device=device
-        self.linear1 = nn.Linear(input_size, hidden_size, device=self.device)
-        self.linear2 = nn.Linear(hidden_size, hidden_size, device=self.device)
-        self.linear3 = nn.Linear(hidden_size, hidden_size, device=self.device)
-        self.linear4 = nn.Linear(hidden_size, output_size, device=self.device)
+        
+        self.linear_input = nn.Linear(input_size, hidden_size, device=self.device)
+        self.linear_hidden_array = nn.ModuleList([nn.Linear(hidden_size, hidden_size, device=self.device) for _ in range(10)])
+        self.linear_output = nn.Linear(hidden_size, output_size, device=self.device)
         
         # self.linear1 = nn.Linear(input_size, hidden_size, device=self.device)
         # self.linear2 = nn.Linear(hidden_size, output_size, device=self.device)
@@ -19,12 +19,19 @@ class Linear_QNet(nn.Module):
         # self.linear1 = nn.Linear(input_size, output_size, device=self.device)
 
     def forward(self, x):
-        x = F.selu(self.linear1(x))
-        x = self.linear2(x)
-        x = F.selu(self.linear2(x))
-        x = self.linear3(x)
-        x = F.selu(self.linear3(x))
-        x = self.linear4(x)
+        
+        x = F.selu(self.linear_input(x))
+        for linear in self.linear_hidden_array:
+            x = F.selu(linear(x))
+        x = self.linear_output(x)
+        
+        
+        # x = F.selu(self.linear1(x))
+        # x = self.linear2(x)
+        # x = F.selu(self.linear2(x))
+        # x = self.linear3(x)
+        # x = F.selu(self.linear3(x))
+        # x = self.linear4(x)
         
         # x = F.relu(self.linear1(x))
         # x = self.linear2(x)
