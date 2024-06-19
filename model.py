@@ -1,40 +1,71 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 import os
+from typing import Literal
+import torch.nn.functional as F
+
+Device = Literal["cpu", "mps"]
+ActivationFunction = Literal["relu", "selu", "leaky_relu", "elu"]
+
+def get_activation_function(activation_function: ActivationFunction):
+    if activation_function == "relu":
+        return F.relu
+    elif activation_function == "selu":
+        return F.selu
+    elif activation_function == "leaky_relu":
+        return F.leaky_relu
+    elif activation_function == "elu":
+        return F.elu
+    else:
+        raise ValueError("Invalid activation function")
+    
+def get_device(device: Device):
+    if device == "cpu":
+        return torch.device("cpu")
+    elif device == "mps":
+        return torch.device("mps")
+    else:
+        raise ValueError("Invalid device")
 
 class Linear_QNet(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, device):
+    def __init__(self, input_size, hidden_size, output_size, hidden_layers, activation_function: ActivationFunction, device: Device):
         super().__init__()
-        self.device=device
-        
-        self.linear_input = nn.Linear(input_size, hidden_size, device=self.device)
-        self.linear_hidden_array = nn.ModuleList([nn.Linear(hidden_size, hidden_size, device=self.device) for _ in range(10)])
-        self.linear_output = nn.Linear(hidden_size, output_size, device=self.device)
+        self.device=get_device(device)
+        self.activation_function = get_activation_function(activation_function)
+        # init_model = nn.init.kaiming_normal_
+        # self.linear_input = nn.Linear(input_size, hidden_size, device=self.device)
+        # init_model(self.linear_input.weight, mode='fan_in', nonlinearity='leaky_relu')
+        # self.linear_hidden_array = nn.ModuleList([nn.Linear(hidden_size, hidden_size, device=self.device) for _ in range(hidden_layers)])
+        # for linear in self.linear_hidden_array:
+            # init_model(linear.weight, mode='fan_in', nonlinearity='leaky_relu')
+        # self.linear_output = nn.Linear(hidden_size, output_size, device=self.device)
+        # init_model(self.linear_output.weight, mode='fan_in', nonlinearity='leaky_relu')
         
         # self.linear1 = nn.Linear(input_size, hidden_size, device=self.device)
         # self.linear2 = nn.Linear(hidden_size, output_size, device=self.device)
         
         # self.linear1 = nn.Linear(input_size, output_size, device=self.device)
+        
+        self.linear1 = nn.Linear(input_size, hidden_size, device=self.device)
+        self.linear2 = nn.Linear(hidden_size, hidden_size, device=self.device)
+        self.linear3 = nn.Linear(hidden_size, hidden_size, device=self.device)
+        self.linear4 = nn.Linear(hidden_size, output_size, device=self.device)
 
     def forward(self, x):
+        # x = self.activation_function(self.linear_input(x))
+        # for linear in self.linear_hidden_array:
+        #     x = self.activation_function(linear(x))
+        #     x = linear(x)
+        # x = self.linear_output(x)
         
-        x = F.selu(self.linear_input(x))
-        for linear in self.linear_hidden_array:
-            x = F.selu(linear(x))
-        x = self.linear_output(x)
+        x = F.selu(self.linear1(x))
+        x = self.linear2(x)
+        x = F.selu(self.linear2(x))
+        x = self.linear3(x)
+        x = F.selu(self.linear3(x))
+        x = self.linear4(x)
         
-        
-        # x = F.selu(self.linear1(x))
-        # x = self.linear2(x)
-        # x = F.selu(self.linear2(x))
-        # x = self.linear3(x)
-        # x = F.selu(self.linear3(x))
-        # x = self.linear4(x)
-        
-        # x = F.relu(self.linear1(x))
-        # x = self.linear2(x)
         return x
 
     def save(self, file_name='model.pth'):
@@ -74,7 +105,6 @@ class QTrainer:
             reward = torch.unsqueeze(reward, 0)
             done = (done, )
 
-        # 1: predicted Q values with current state
         pred = self.model(state)
 
         target = pred.clone()
@@ -85,9 +115,6 @@ class QTrainer:
 
             target[idx][torch.argmax(action[idx]).item()] = Q_new
     
-        # 2: Q_new = r + y * max(next_predicted Q value) -> only do this if not done
-        # pred.clone()
-        # preds[argmax(action)] = Q_new
         self.optimizer.zero_grad()
         loss = self.criterion(target, pred)
         loss.backward()

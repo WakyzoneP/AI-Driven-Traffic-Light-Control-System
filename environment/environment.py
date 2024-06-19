@@ -1,10 +1,12 @@
 import random
 import pygame
 import numpy as np
+import time
 
 from .colors import BLACK
 from .constants import (
     CAR_HEIGHT,
+    CAR_SPAWN_RATE,
     CAR_SPEED,
     CAR_WIDTH,
     INTERSECTION_HEIGHT,
@@ -62,6 +64,25 @@ class Environment:
         self.faults = 0
 
         self.car_list: list[Car] = []
+        self.car_list.append(
+            Car(
+                CAR_WIDTH * self.inhance,
+                CAR_HEIGHT * self.inhance,
+                Location.UP,
+                Location.DOWN,
+                self.intersections[0],
+                CAR_SPEED * self.inhance,
+            )
+        )
+        print("Environment created")
+        print("Inhance: ", self.inhance)
+        print("Max Shape: ", self.max_shape)
+        print("Health: ", self.health)
+        print("Intersections: ", len(self.intersections))
+        print("Traffic Level: ", self.traffic_level)
+        print("Car Spawn Rate: ", CAR_SPAWN_RATE * self.traffic_level)
+        print("Step Time: ", STEP_TIME)
+        print("Car Speed: ", CAR_SPEED * self.inhance)
 
     def _create_intersections(self, intersections_json):
         number_of_intersections = len(intersections_json)
@@ -139,6 +160,8 @@ class Environment:
 
         for line in range(matrix.shape[0]):
             for column in range(matrix.shape[1]):
+                if matrix[line][column] == 0:
+                    continue
                 neighbours = {
                     "top": (
                         self.intersections[matrix[line - 1][column] - 1]
@@ -216,14 +239,15 @@ class Environment:
         return spawn_locations
 
     def _spawn_car_mechanism(self):
-        random_number = random.randint(0, 10 * self.traffic_level)
-        if random_number == 1:
+        random_number = random.randint(0, CAR_SPAWN_RATE * self.traffic_level)
+        if random_number == 10:
             spawn_locations_list = self._get_spawn_locations()
             init_location, intersection = random.choice(spawn_locations_list)
             final_locations = [
                 location for location in Location if location != init_location
             ]
             final_location = random.choice(final_locations)
+            # car_speed_inhancement = 1 if self.env_type == EnvType.TRAINING else 3
             new_car = Car(
                 CAR_WIDTH * self.inhance,
                 CAR_HEIGHT * self.inhance,
@@ -241,7 +265,6 @@ class Environment:
                 self.car_list.append(new_car)
 
     def generate_state(self):
-        # contains the sum of the life of the cars in the intersection
         state = [0 for _ in range(len(self.intersections) * 4)]
         for car in self.car_list:
             if car.intersection is None:
@@ -294,8 +317,9 @@ class Environment:
         return True
 
     def run(self):
-        if self.env_type == EnvType.TRAINING:
-            self.health -= 2
+        # time.sleep(0.01)
+        # if self.env_type == EnvType.TRAINING:
+        self.health -= 1
         self.can_change_time -= 1
         self._manual_control()
         self._spawn_car_mechanism()
@@ -336,7 +360,7 @@ class Environment:
             if car.intersection is not None:
                 self.faults += 0.04
 
-        return 0.05 + self.passed_cars - self.faults
+        return -0.05 + self.passed_cars * 0.1 - self.faults
 
     def _reward_calculator1(self):
         sum_of_rewards = 0
